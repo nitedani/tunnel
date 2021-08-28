@@ -1,0 +1,3 @@
+dispatch:
+  - url: "*.test-test451.ew.r.appspot.com/"
+    service: default

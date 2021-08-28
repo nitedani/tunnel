@@ -1,0 +1,158 @@
+import express from "express";
+import bp from "body-parser";
+import { Server } from "socket.io";
+import http from "http";
+import crypto from "crypto";
+import net from "net";
+
+const randomInteger = (min, max) => {
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+};
+
+const createNetServer = ({ PORT, IO_SOCKET }) => {
+  return new Promise((resolve, reject) => {
+    const server = net.createServer((netSocket) => {
+      const id = crypto.randomBytes(20).toString("hex");
+      const connectionId = `tcp_${id}`;
+
+      netSocket.pause();
+      IO_SOCKET.emit("tcp_connection", { connectionId });
+      IO_SOCKET.on(`${connectionId}_connected`, () => {
+        netSocket.resume();
+      });
+
+      netSocket.on("data", (data) => {
+        IO_SOCKET.emit(`${connectionId}_data`, data);
+      });
+
+      netSocket.on("end", () => {
+        IO_SOCKET.emit(`${connectionId}_end`);
+      });
+
+      netSocket.on("error", (err) => {
+        IO_SOCKET.emit(`${connectionId}_error`, err);
+      });
+
+      IO_SOCKET.on(`${connectionId}_data`, (data) => {
+        netSocket.write(data);
+      });
+
+      IO_SOCKET.on(`${connectionId}_close`, () => {
+        netSocket.destroy();
+      });
+
+      IO_SOCKET.on(`${connectionId}_error`, (err) => {
+        netSocket.destroy(err);
+      });
+    });
+
+    IO_SOCKET.on("disconnect", () => server.close());
+
+    return server.listen(PORT).once("listening", resolve).once("error", reject);
+  });
+};
+
+export const listen = ({ PORT }) => {
+  const app = express();
+  app.use(bp.raw({ type: "*/*" }));
+
+  const server = http.createServer(app);
+  const io = new Server(server);
+  app.get("*", (req, res) => {
+    const room = req.headers.host;
+    const sockets = io.sockets.adapter.rooms.get(room);
+
+    if (sockets) {
+      console.log(
+        `Tunneling GET - ${req.originalUrl} to ${sockets.size} clients`
+      );
+      const id = crypto.randomBytes(20).toString("hex");
+      const responseKey = `res_${id}`;
+      for (const socket of sockets.values()) {
+        io.sockets.sockets.get(socket).on(responseKey, (_res) => {
+          res.set(_res.headers);
+          res.status(_res.status);
+          res.send(_res.body);
+
+          for (const _socket of sockets.values()) {
+            io.sockets.sockets.get(_socket).removeAllListeners(`res_${id}`);
+          }
+        });
+      }
+
+      const _req = {
+        url: req.originalUrl,
+        headers: req.headers,
+        responseKey,
+      };
+
+      io.to(room).emit("get", _req);
+    } else {
+      res.status(404);
+      res.send({ error: "No clients found" });
+    }
+  });
+
+  app.post("*", (req, res) => {
+    const room = req.headers.host;
+    const sockets = io.sockets.adapter.rooms.get(room);
+
+    if (sockets) {
+      console.log(
+        `Tunneling POST - ${req.originalUrl} to ${sockets.size} clients`
+      );
+      const id = crypto.randomBytes(20).toString("hex");
+      const responseKey = `res_${id}`;
+      for (const socket of sockets.values()) {
+        io.sockets.sockets.get(socket).on(responseKey, (_res) => {
+          res.set(_res.headers);
+          res.status(_res.status);
+          res.send(_res.body);
+
+          for (const _socket of sockets.values()) {
+            io.sockets.sockets.get(_socket).removeAllListeners(`res_${id}`);
+          }
+        });
+      }
+
+      const _req = {
+        url: req.originalUrl,
+        headers: req.headers,
+        body: Object.keys(req.body).length !== 0 ? req.body : undefined,
+        responseKey,
+      };
+
+      io.to(room).emit("post", _req);
+    } else {
+      res.status(404);
+      res.send({ error: "No clients found" });
+    }
+  });
+
+  io.on("connection", (socket) => {
+    console.log("io socket connected");
+
+    socket.on("register_http_listener", () => {
+      socket.join(socket.handshake.headers.host);
+    });
+
+    socket.on("register_tcp_listener", async ({ preferredPort }) => {
+      const NET_PORT = preferredPort || randomInteger(10000, 20000);
+      try {
+        await createNetServer({
+          PORT: NET_PORT,
+          IO_SOCKET: socket,
+        });
+        console.log(`tcp server listening on *:${NET_PORT}`);
+
+        socket.emit("tcp_listening", NET_PORT);
+      } catch (error) {
+        console.log(error);
+      }
+    });
+  });
+
+  server.listen(PORT, () => {
+    console.log(`socket-io and express listening on *:${PORT}`);
+  });
+};
