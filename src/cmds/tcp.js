@@ -18,7 +18,7 @@ export const handler = async (argv) => {
   const { listen } = await import("../client/client-tcp.js");
   listen({
     PROVIDER: argv.provider,
-    TO: parseTo(argv.to),
     PREFERRED_PORT: argv.preferredPort,
+    ...parseTo(argv.to),
   });
 };

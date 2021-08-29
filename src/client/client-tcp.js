@@ -5,8 +5,14 @@ import { io } from "socket.io-client";
 import Table from "cli-table";
 import net from "net";
 
-export const listen = async ({ PROVIDER, TO, SECURE, PREFERRED_PORT }) => {
-  const [TO_HOST, TO_PORT] = TO.split(":");
+export const listen = async ({
+  PROVIDER,
+  TO_PROTOCOL,
+  TO_PORT,
+  TO_HOST,
+  SECURE,
+  PREFERRED_PORT,
+}) => {
   const [PROVIDER_HOST] = PROVIDER.split(":");
 
   let netSockets = {};
@@ -22,7 +28,7 @@ export const listen = async ({ PROVIDER, TO, SECURE, PREFERRED_PORT }) => {
   let NET_PORT = "";
 
   socket.on("connect_error", (err) => {
-    reconnecting = false;
+    reconnecting = true;
     error = err.message;
     updateConsole();
   });
@@ -52,7 +58,7 @@ export const listen = async ({ PROVIDER, TO, SECURE, PREFERRED_PORT }) => {
   });
 
   socket.on("disconnect", function () {
-    reconnecting = false;
+    reconnecting = true;
     netSockets = {};
     updateConsole();
   });
@@ -87,7 +93,7 @@ export const listen = async ({ PROVIDER, TO, SECURE, PREFERRED_PORT }) => {
         table.push({
           [chalk.white(
             "Forwarding"
-          )]: `tcp://${PROVIDER_HOST}:${NET_PORT} -> tcp://${TO}`,
+          )]: `tcp://${PROVIDER_HOST}:${NET_PORT} -> tcp://${TO_HOST}:${TO_PORT}`,
         });
 
         const connectedNetSockets = Object.values(netSockets).filter(

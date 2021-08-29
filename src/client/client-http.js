@@ -3,9 +3,15 @@ import got from "got";
 import chalk from "chalk";
 import { io } from "socket.io-client";
 
-export const listen = async ({ PROVIDER, TO, SECURE }) => {
+export const listen = async ({
+  PROVIDER,
+  TO_PROTOCOL,
+  TO_HOST,
+  TO_PORT,
+  SECURE,
+}) => {
   const tty = isatty(process.stdout.fd);
-  const [TO_HOST, TO_PORT] = TO.split(":");
+
   const IO_PROTOCOL = SECURE ? "https" : "http";
   const socket = io(`${IO_PROTOCOL}://${PROVIDER}`);
 
@@ -14,7 +20,7 @@ export const listen = async ({ PROVIDER, TO, SECURE }) => {
   const logs = [];
 
   socket.on("connect_error", (err) => {
-    reconnecting = false;
+    reconnecting = true;
     error = err.message;
     updateConsole();
   });
@@ -31,7 +37,7 @@ export const listen = async ({ PROVIDER, TO, SECURE }) => {
   });
 
   socket.on("disconnect", function () {
-    reconnecting = false;
+    reconnecting = true;
     updateConsole();
   });
 
@@ -56,9 +62,13 @@ export const listen = async ({ PROVIDER, TO, SECURE }) => {
 
   const writeStatus = () => {
     if (socket.connected) {
-      console.log(chalk.green("Connected"));
-      console.log(`Forwarding   https://${PROVIDER} -> ${TO}`);
-      console.log(`Forwarding   http://${PROVIDER} -> ${TO}`);
+      console.log(chalk.green("Live"));
+      console.log(
+        `Forwarding   https://${PROVIDER} -> ${TO_PROTOCOL}://${TO_HOST}:${TO_PORT}`
+      );
+      console.log(
+        `Forwarding   http://${PROVIDER} -> ${TO_PROTOCOL}://${TO_HOST}:${TO_PORT}`
+      );
     } else {
       if (reconnecting) {
         console.log(chalk.yellow("Reconnecting.."));
@@ -83,7 +93,7 @@ export const listen = async ({ PROVIDER, TO, SECURE }) => {
 
   socket.on("get", async ({ url, headers, responseKey }) => {
     try {
-      const response = await got.get(`http://${TO}${url}`, {
+      const response = await got.get(`${TO_PROTOCOL}://${TO_HOST}${url}`, {
         headers: { ...headers, host: TO_HOST },
         followRedirect: true,
         decompress: false,
@@ -111,12 +121,15 @@ export const listen = async ({ PROVIDER, TO, SECURE }) => {
 
   socket.on("post", async ({ url, headers, body, responseKey }) => {
     try {
-      const response = await got.post(`http://${TO}${url}`, {
-        body,
-        headers: { ...headers, host: TO_HOST },
-        followRedirect: true,
-        decompress: false,
-      });
+      const response = await got.post(
+        `${TO_PROTOCOL}://${TO_HOST}:${TO_PORT}${url}`,
+        {
+          body,
+          headers: { ...headers, host: TO_HOST },
+          followRedirect: true,
+          decompress: false,
+        }
+      );
       const _res = {
         status: response.statusCode,
         body: response.body,
