@@ -5,7 +5,7 @@ import { io } from "socket.io-client";
 
 export const listen = async ({ PROVIDER, TO, SECURE }) => {
   const tty = isatty(process.stdout.fd);
-
+  const [TO_HOST, TO_PORT] = TO.split(":");
   const IO_PROTOCOL = SECURE ? "https" : "http";
   const socket = io(`${IO_PROTOCOL}://${PROVIDER}`);
 
@@ -84,24 +84,28 @@ export const listen = async ({ PROVIDER, TO, SECURE }) => {
   socket.on("get", async ({ url, headers, responseKey }) => {
     try {
       const response = await got.get(`http://${TO}${url}`, {
-        headers,
-        followRedirect: false,
+        headers: { ...headers, host: TO_HOST },
+        followRedirect: true,
+        decompress: false,
       });
       const _res = {
         status: response.statusCode,
         body: response.body,
         headers: response.headers,
       };
-
       socket.emit(responseKey, _res);
-      addLog(`GET ${url} ${chalk.green(response.statusCode)}`);
+      addLog(`GET ${url.substring(0, 80)} ${chalk.green(response.statusCode)}`);
     } catch (err) {
       socket.emit(responseKey, {
         status: err.response?.statusCode || 404,
         headers: err.response?.headers,
         body: err.response?.body,
       });
-      addLog(`GET ${url} ${chalk.red(err.response?.statusCode || "404")}`);
+      addLog(
+        `GET ${url.substring(0, 80)} ${chalk.red(
+          err.response?.statusCode || "404"
+        )}`
+      );
     }
   });
 
@@ -109,7 +113,9 @@ export const listen = async ({ PROVIDER, TO, SECURE }) => {
     try {
       const response = await got.post(`http://${TO}${url}`, {
         body,
-        headers,
+        headers: { ...headers, host: TO_HOST },
+        followRedirect: true,
+        decompress: false,
       });
       const _res = {
         status: response.statusCode,
@@ -117,14 +123,20 @@ export const listen = async ({ PROVIDER, TO, SECURE }) => {
         headers: response.headers,
       };
       socket.emit(responseKey, _res);
-      addLog(`POST ${url} ${chalk.green(response.statusCode)}`);
+      addLog(
+        `POST ${url.substring(0, 80)} ${chalk.green(response.statusCode)}`
+      );
     } catch (err) {
       socket.emit(responseKey, {
         status: err.response?.statusCode || 404,
         headers: err.response?.headers,
         body: err.response?.body,
       });
-      addLog(`POST ${url} ${chalk.red(err.response?.statusCode || "404")}`);
+      addLog(
+        `POST ${url.substring(0, 80)} ${chalk.red(
+          err.response?.statusCode || "404"
+        )}`
+      );
     }
   });
 };
