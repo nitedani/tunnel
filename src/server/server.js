@@ -16,7 +16,10 @@ const createNetTunnel = ({ PORT, IO_SOCKET }) => {
       const connectionId = `tcp_${id}`;
 
       netSocket.pause();
-      IO_SOCKET.emit("tcp_connection", { connectionId });
+      IO_SOCKET.emit("tcp_connection", {
+        connectionId,
+        remoteAddress: netSocket.remoteAddress,
+      });
       IO_SOCKET.on(`${connectionId}_connected`, () => {
         netSocket.resume();
       });
@@ -25,8 +28,8 @@ const createNetTunnel = ({ PORT, IO_SOCKET }) => {
         IO_SOCKET.emit(`${connectionId}_data`, data);
       });
 
-      netSocket.on("end", () => {
-        IO_SOCKET.emit(`${connectionId}_end`);
+      netSocket.on("close", () => {
+        IO_SOCKET.emit(`${connectionId}_close`);
       });
 
       netSocket.on("error", (err) => {
