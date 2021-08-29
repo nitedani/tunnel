@@ -3,14 +3,14 @@ import chalk from "chalk";
 import { io } from "socket.io-client";
 import net from "net";
 
-export const listen = async ({ FROM, TO, SECURE }) => {
-    const [TO_HOST, TO_PORT] = TO.split(":");
-    const [FROM_HOST, FROM_PORT] = FROM.split(":");
+export const listen = async ({ PROVIDER, TO, SECURE, PREFERRED_PORT }) => {
+  const [TO_HOST, TO_PORT] = TO.split(":");
+  const [PROVIDER_HOST, PROVIDER_PORT] = PROVIDER.split(":");
 
   const tty = isatty(process.stdout.fd);
 
   const IO_PROTOCOL = SECURE ? "https" : "http";
-  const socket = io(`${IO_PROTOCOL}://${FROM_HOST}`);
+  const socket = io(`${IO_PROTOCOL}://${PROVIDER}`);
 
   let error = "";
   let reconnecting = false;
@@ -25,7 +25,20 @@ export const listen = async ({ FROM, TO, SECURE }) => {
 
   socket.on("connect", function () {
     reconnecting = false;
-    socket.emit("register_tcp_listener", {});
+
+    socket.emit(
+      "register_tcp_listener",
+      { preferredPort: PREFERRED_PORT },
+      ({ port, err }) => {
+        if (err) {
+          console.error(err);
+          process.exit();
+        }
+
+        NET_PORT = port;
+        updateConsole();
+      }
+    );
     updateConsole();
   });
 
@@ -59,9 +72,11 @@ export const listen = async ({ FROM, TO, SECURE }) => {
   };
 
   const writeStatus = () => {
-    if (NET_PORT) {
+    if (socket.connected) {
       console.log(chalk.green("Connected"));
-      console.log(`Forwarding    ${FROM_HOST}:${NET_PORT} -> ${TO}`);
+      if (NET_PORT) {
+        console.log(`Forwarding    ${PROVIDER_HOST}:${NET_PORT} -> ${TO}`);
+      }
     } else {
       if (reconnecting) {
         console.log(chalk.yellow("Reconnecting.."));
@@ -83,11 +98,6 @@ export const listen = async ({ FROM, TO, SECURE }) => {
       writeStatus();
     }
   };
-
-  socket.on("tcp_listening", (port) => {
-    NET_PORT = port;
-    updateConsole();
-  });
 
   socket.on("tcp_connection", ({ connectionId }) => {
     addLog("TCP CONNECTION");

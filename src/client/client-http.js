@@ -3,14 +3,11 @@ import got from "got";
 import chalk from "chalk";
 import { io } from "socket.io-client";
 
-export const listen = async ({ FROM, TO, SECURE }) => {
+export const listen = async ({ PROVIDER, TO, SECURE }) => {
   const tty = isatty(process.stdout.fd);
 
-  const [TO_HOST, TO_PORT] = TO.split(":");
-  const [FROM_HOST, FROM_PORT] = FROM.split(":");
-
   const IO_PROTOCOL = SECURE ? "https" : "http";
-  const socket = io(`${IO_PROTOCOL}://${FROM_HOST}`);
+  const socket = io(`${IO_PROTOCOL}://${PROVIDER}`);
 
   let error = "";
   let reconnecting = false;
@@ -60,8 +57,8 @@ export const listen = async ({ FROM, TO, SECURE }) => {
   const writeStatus = () => {
     if (socket.connected) {
       console.log(chalk.green("Connected"));
-      console.log(`Forwarding   https://${FROM_HOST} -> ${TO}`);
-      console.log(`Forwarding   http://${FROM_HOST} -> ${TO}`);
+      console.log(`Forwarding   https://${PROVIDER} -> ${TO}`);
+      console.log(`Forwarding   http://${PROVIDER} -> ${TO}`);
     } else {
       if (reconnecting) {
         console.log(chalk.yellow("Reconnecting.."));
@@ -98,13 +95,13 @@ export const listen = async ({ FROM, TO, SECURE }) => {
 
       socket.emit(responseKey, _res);
       addLog(`GET ${url} ${chalk.green(response.statusCode)}`);
-    } catch (error) {
+    } catch (err) {
       socket.emit(responseKey, {
-        status: error.response?.statusCode || 404,
-        headers: error.response?.headers,
-        body: error.response?.body,
+        status: err.response?.statusCode || 404,
+        headers: err.response?.headers,
+        body: err.response?.body,
       });
-      addLog(`GET ${url} ${chalk.red(error.response?.statusCode || "404")}`);
+      addLog(`GET ${url} ${chalk.red(err.response?.statusCode || "404")}`);
     }
   });
 
@@ -121,13 +118,13 @@ export const listen = async ({ FROM, TO, SECURE }) => {
       };
       socket.emit(responseKey, _res);
       addLog(`POST ${url} ${chalk.green(response.statusCode)}`);
-    } catch (error) {
+    } catch (err) {
       socket.emit(responseKey, {
-        status: error.response?.statusCode || 404,
-        headers: error.response?.headers,
-        body: error.response?.body,
+        status: err.response?.statusCode || 404,
+        headers: err.response?.headers,
+        body: err.response?.body,
       });
-      addLog(`POST ${url} ${chalk.red(error.response?.statusCode || "404")}`);
+      addLog(`POST ${url} ${chalk.red(err.response?.statusCode || "404")}`);
     }
   });
 };

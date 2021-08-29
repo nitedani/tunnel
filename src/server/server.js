@@ -9,7 +9,7 @@ const randomInteger = (min, max) => {
   return Math.floor(Math.random() * (max - min + 1)) + min;
 };
 
-const createNetServer = ({ PORT, IO_SOCKET }) => {
+const createNetTunnel = ({ PORT, IO_SOCKET }) => {
   return new Promise((resolve, reject) => {
     const server = net.createServer((netSocket) => {
       const id = crypto.randomBytes(20).toString("hex");
@@ -132,27 +132,28 @@ export const listen = ({ PORT }) => {
   io.on("connection", (socket) => {
     console.log("io socket connected");
 
-    socket.on("register_http_listener", () => {
+    socket.on("register_http_listener", (_, ack) => {
       socket.join(socket.handshake.headers.host);
     });
 
-    socket.on("register_tcp_listener", async ({ preferredPort }) => {
+    socket.on("register_tcp_listener", async ({ preferredPort }, ack) => {
       const NET_PORT = preferredPort || randomInteger(10000, 20000);
       try {
-        await createNetServer({
+        await createNetTunnel({
           PORT: NET_PORT,
           IO_SOCKET: socket,
         });
         console.log(`tcp server listening on *:${NET_PORT}`);
 
-        socket.emit("tcp_listening", NET_PORT);
-      } catch (error) {
+        ack({ port: NET_PORT });
+      } catch (err) {
+        ack({ err });
         console.log(error);
       }
     });
   });
 
   server.listen(PORT, () => {
-    console.log(`socket-io and express listening on *:${PORT}`);
+    console.log(`tunnelr listening on *:${PORT}`);
   });
 };
