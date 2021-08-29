@@ -4,4 +4,7 @@ import yargs from "yargs";
 import { hideBin } from "yargs/helpers";
 import { commands } from "./cmds/index.js";
 
-yargs(hideBin(process.argv)).command(commands).demandCommand().argv;
+yargs(hideBin(process.argv))
+  .command(commands)
+  .demandCommand()
+  .scriptName("tunnelr").argv;

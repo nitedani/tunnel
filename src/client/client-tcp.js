@@ -136,15 +136,12 @@ export const listen = async ({ PROVIDER, TO, SECURE, PREFERRED_PORT }) => {
   };
 
   const updateConsole = () => {
-    if (tty) {
-      console.clear();
-      writeStatus();
-      console.log();
-      for (const log of logs) {
-        console.log(log);
-      }
-    } else {
-      writeStatus();
+    if (!tty) return;
+    console.clear();
+    writeStatus();
+    console.log();
+    for (const log of logs) {
+      console.log(log);
     }
   };
 
