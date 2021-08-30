@@ -93,11 +93,14 @@ export const listen = async ({
 
   socket.on("get", async ({ url, headers, responseKey }) => {
     try {
-      const response = await got.get(`${TO_PROTOCOL}://${TO_HOST}${url}`, {
-        headers: { ...headers, host: TO_HOST },
-        followRedirect: true,
-        decompress: false,
-      });
+      const response = await got.get(
+        `${TO_PROTOCOL}://${TO_HOST}:${TO_PORT}${url}`,
+        {
+          headers: { ...headers, host: TO_HOST },
+          followRedirect: false,
+          decompress: false,
+        }
+      );
       const _res = {
         status: response.statusCode,
         body: response.body,
@@ -126,7 +129,7 @@ export const listen = async ({
         {
           body,
           headers: { ...headers, host: TO_HOST },
-          followRedirect: true,
+          followRedirect: false,
           decompress: false,
         }
       );
