@@ -13,12 +13,19 @@ export const builder = {
   provider: {
     default: process.env.TUNNELR_PROVIDER || "0.tunnelr.co",
   },
+  "dot-domain": {
+    describe: '-dot- subdomain compatibility',
+    type: "boolean",
+    default: false,
+  },
 };
 
 export const handler = async (argv) => {
   const { listen } = await import("../client/client-http.js");
   listen({
-    PROVIDER: `${argv.room}-dot-${argv.provider}`,
+    PROVIDER: `${argv.room}${argv["dot-domain"] ? "-dot-" : "."}${
+      argv.provider
+    }`,
     ...parseTo(argv.to),
   });
 };
