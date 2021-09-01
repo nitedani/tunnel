@@ -14,9 +14,14 @@ export const builder = {
     default: process.env.TUNNELR_PROVIDER || "0.tunnelr.co",
   },
   "dot-domain": {
-    describe: '-dot- subdomain compatibility',
+    describe: "-dot- subdomain compatibility",
     type: "boolean",
     default: false,
+  },
+  secure: {
+    describe: "use secure connection to tunnelr server",
+    type: "boolean",
+    default: true,
   },
 };
 
@@ -26,6 +31,7 @@ export const handler = async (argv) => {
     PROVIDER: `${argv.room}${argv["dot-domain"] ? "-dot-" : "."}${
       argv.provider
     }`,
+    SECURE: argv.secure,
     ...parseTo(argv.to),
   });
 };
