@@ -2,7 +2,7 @@ export const command = "serve [port]";
 export const desc = "Start tunnelr server";
 export const builder = {
   port: {
-    default: 80,
+    default: process.env.PORT || 80,
   },
 };
 

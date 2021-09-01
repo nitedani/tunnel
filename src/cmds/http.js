@@ -18,7 +18,7 @@ export const builder = {
 export const handler = async (argv) => {
   const { listen } = await import("../client/client-http.js");
   listen({
-    PROVIDER: `${argv.room}.${argv.provider}`,
+    PROVIDER: `${argv.room}-dot-${argv.provider}`,
     ...parseTo(argv.to),
   });
 };

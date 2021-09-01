@@ -1,7 +1,7 @@
 {
   "name": "tunnelr",
   "type": "module",
-  "version": "1.0.6",
+  "version": "1.0.7",
   "description": "",
   "repository": {
     "type": "git",
@@ -17,7 +17,7 @@
   },
   "scripts": {
     "tunnelr": "node ./src/main.js",
-    "start": "node ./src/main.js"
+    "start": "node ./src/main.js serve"
   },
   "keywords": [],
   "license": "ISC",
