@@ -2,7 +2,12 @@ import { isatty } from "tty";
 import got from "got";
 import chalk from "chalk";
 import { io } from "socket.io-client";
+import ss from "@sap_oss/node-socketio-stream";
+import stream from "stream";
+import { promisify } from "util";
+import request from "request";
 
+const pipeline = promisify(stream.pipeline);
 export const listen = async ({
   PROVIDER,
   TO_PROTOCOL,
@@ -92,34 +97,35 @@ export const listen = async ({
   };
 
   socket.on("get", async ({ url, headers, responseKey }) => {
-    try {
-      const response = await got.get(
-        `${TO_PROTOCOL}://${TO_HOST}:${TO_PORT}${url}`,
-        {
-          headers: { ...headers, host: TO_HOST },
-          followRedirect: false,
-          decompress: false,
+    request(`${TO_PROTOCOL}://${TO_HOST}:${TO_PORT}${url}`, {
+      headers: { ...headers, host: TO_HOST },
+      followRedirect: false,
+    })
+      .on("socket", (sock) => {
+        const socketStream = ss.createStream();
+        ss(socket).emit(responseKey, socketStream);
+        sock.pipe(socketStream);
+
+        sock.once("close", () => {
+          socketStream.end();
+        });
+      })
+      .on("complete", (response) => {
+        const statusCode = response.statusCode;
+        const isOk = statusCode < 400 || statusCode > 500;
+        if (isOk) {
+          addLog(
+            `GET ${url.substring(0, 80)} ${chalk.green(response.statusCode)}`
+          );
+        } else {
+          addLog(
+            `GET ${url.substring(0, 80)} ${chalk.red(response.statusCode)}`
+          );
         }
-      );
-      const _res = {
-        status: response.statusCode,
-        body: response.body,
-        headers: response.headers,
-      };
-      socket.emit(responseKey, _res);
-      addLog(`GET ${url.substring(0, 80)} ${chalk.green(response.statusCode)}`);
-    } catch (err) {
-      socket.emit(responseKey, {
-        status: err.response?.statusCode || 404,
-        headers: err.response?.headers,
-        body: err.response?.body,
+      })
+      .on("error", (err) => {
+        addLog(`GET ${url.substring(0, 80)} ${chalk.red(err)}`);
       });
-      addLog(
-        `GET ${url.substring(0, 80)} ${chalk.red(
-          err.response?.statusCode || "404"
-        )}`
-      );
-    }
   });
 
   socket.on("post", async ({ url, headers, body, responseKey }) => {

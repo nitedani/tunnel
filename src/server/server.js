@@ -4,6 +4,7 @@ import { Server } from "socket.io";
 import http from "http";
 import crypto from "crypto";
 import net from "net";
+import ss from "@sap_oss/node-socketio-stream";
 
 const randomInteger = (min, max) => {
   return Math.floor(Math.random() * (max - min + 1)) + min;
@@ -71,17 +72,11 @@ export const listen = ({ PORT }) => {
       );
       const id = crypto.randomBytes(20).toString("hex");
       const responseKey = `res_${id}`;
-      for (const socket of sockets.values()) {
-        io.sockets.sockets.get(socket).on(responseKey, (_res) => {
-          res.set(_res.headers);
-          res.status(_res.status);
-          res.send(_res.body);
+      const socket = io.sockets.sockets.get(sockets.values().next().value);
 
-          for (const _socket of sockets.values()) {
-            io.sockets.sockets.get(_socket).removeAllListeners(`res_${id}`);
-          }
-        });
-      }
+      ss(socket).on(responseKey, (stream) => {
+        stream.pipe(res.socket);
+      });
 
       const _req = {
         url: req.originalUrl,
@@ -113,7 +108,7 @@ export const listen = ({ PORT }) => {
           res.send(_res.body);
 
           for (const _socket of sockets.values()) {
-            io.sockets.sockets.get(_socket).removeAllListeners(`res_${id}`);
+            io.sockets.sockets.get(_socket).removeAllListeners(responseKey);
           }
         });
       }
