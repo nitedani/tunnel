@@ -96,19 +96,14 @@ export const listen = async ({
     }
   };
 
-  socket.on("get", async ({ url, headers, responseKey }) => {
+  ss(socket).on("get", ({ url, headers }, socketStream) => {
     request(`${TO_PROTOCOL}://${TO_HOST}:${TO_PORT}${url}`, {
       headers: { ...headers, host: TO_HOST },
       followRedirect: false,
     })
       .on("socket", (sock) => {
-        const socketStream = ss.createStream();
-        ss(socket).emit(responseKey, socketStream);
         sock.pipe(socketStream);
-
-        sock.once("close", () => {
-          socketStream.end();
-        });
+        socketStream.pipe(sock);
       })
       .on("complete", (response) => {
         const statusCode = response.statusCode;

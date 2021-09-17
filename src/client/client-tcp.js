@@ -4,6 +4,7 @@ import chalk from "chalk";
 import { io } from "socket.io-client";
 import Table from "cli-table";
 import net from "net";
+import ss from "@sap_oss/node-socketio-stream";
 
 export const listen = async ({
   PROVIDER,
@@ -64,23 +65,12 @@ export const listen = async ({
   });
 
   setInterval(() => {
+    updateConsole();
     if (socket.disconnected) {
       reconnecting = true;
       socket.connect();
     }
   }, 5000);
-
-  const addLog = (log) => {
-    if (tty) {
-      if (logs.length > 5) {
-        logs.pop();
-      }
-      logs.unshift(log);
-      updateConsole();
-    } else {
-      console.log(log);
-    }
-  };
 
   const writeStatus = () => {
     const table = new Table();
@@ -151,44 +141,22 @@ export const listen = async ({
     }
   };
 
-  socket.on("tcp_connection", ({ connectionId, remoteAddress }) => {
-    const client = new net.Socket();
+  ss(socket).on(
+    "tcp_connection",
+    ({ connectionId, remoteAddress }, socketStream) => {
+      const client = new net.Socket();
 
-    netSockets[connectionId] = client;
+      netSockets[connectionId] = client;
 
-    client.connect(TO_PORT, TO_HOST, () => {
-      socket.emit(`${connectionId}_connected`);
-      updateConsole();
-    });
 
-    client.on("data", (data) => {
-      socket.emit(`${connectionId}_data`, data);
-      updateConsole();
-    });
+      client.connect(TO_PORT, TO_HOST, () => {
+        socket.emit(`${connectionId}_connected`);
+        updateConsole();
 
-    client.on("close", () => {
-      socket.emit(`${connectionId}_close`);
-      updateConsole();
-    });
+      });
 
-    client.on("error", (err) => {
-      socket.emit(`${connectionId}_error`, err);
-      updateConsole();
-    });
-
-    socket.on(`${connectionId}_data`, (data) => {
-      client.write(data);
-      updateConsole();
-    });
-
-    socket.on(`${connectionId}_close`, () => {
-      client.destroy();
-      updateConsole();
-    });
-
-    socket.on(`${connectionId}_error`, (err) => {
-      client.destroy(err);
-      updateConsole();
-    });
-  });
+      socketStream.pipe(client);
+      client.pipe(socketStream);
+    }
+  );
 };

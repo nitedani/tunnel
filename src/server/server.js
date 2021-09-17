@@ -15,39 +15,17 @@ const createNetTunnel = ({ PORT, IO_SOCKET }) => {
     const server = net.createServer((netSocket) => {
       const id = crypto.randomBytes(20).toString("hex");
       const connectionId = `tcp_${id}`;
-
-      netSocket.pause();
-      IO_SOCKET.emit("tcp_connection", {
-        connectionId,
-        remoteAddress: netSocket.remoteAddress,
-      });
-      IO_SOCKET.on(`${connectionId}_connected`, () => {
-        netSocket.resume();
-      });
-
-      netSocket.on("data", (data) => {
-        IO_SOCKET.emit(`${connectionId}_data`, data);
-      });
-
-      netSocket.on("close", () => {
-        IO_SOCKET.emit(`${connectionId}_close`);
-      });
-
-      netSocket.on("error", (err) => {
-        IO_SOCKET.emit(`${connectionId}_error`, err);
-      });
-
-      IO_SOCKET.on(`${connectionId}_data`, (data) => {
-        netSocket.write(data);
-      });
-
-      IO_SOCKET.on(`${connectionId}_close`, () => {
-        netSocket.destroy();
-      });
-
-      IO_SOCKET.on(`${connectionId}_error`, (err) => {
-        netSocket.destroy(err);
-      });
+      const socketStream = ss.createStream();
+      ss(IO_SOCKET).emit(
+        "tcp_connection",
+        {
+          connectionId,
+          remoteAddress: netSocket.remoteAddress,
+        },
+        socketStream
+      );
+      socketStream.pipe(netSocket);
+      netSocket.pipe(socketStream);
     });
 
     IO_SOCKET.on("disconnect", () => server.close());
@@ -67,24 +45,16 @@ export const listen = ({ PORT }) => {
     const sockets = io.sockets.adapter.rooms.get(room);
 
     if (sockets) {
-      console.log(
-        `Tunneling GET - ${req.originalUrl} to ${sockets.size} clients`
-      );
-      const id = crypto.randomBytes(20).toString("hex");
-      const responseKey = `res_${id}`;
       const socket = io.sockets.sockets.get(sockets.values().next().value);
-
-      ss(socket).on(responseKey, (stream) => {
-        stream.pipe(res.socket);
-      });
-
+      console.log(`Tunneling GET - ${req.originalUrl} to ${socket.id}`);
       const _req = {
         url: req.originalUrl,
         headers: req.headers,
-        responseKey,
       };
-
-      io.to(room).emit("get", _req);
+      const socketStream = ss.createStream();
+      ss(socket).emit("get", _req, socketStream);
+      socketStream.pipe(res.socket);
+      res.socket.pipe(socketStream);
     } else {
       res.status(404);
       res.send({ error: "No clients found" });
