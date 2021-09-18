@@ -46,7 +46,7 @@ export const listen = ({ PORT }) => {
 
     if (sockets) {
       const socket = io.sockets.sockets.get(sockets.values().next().value);
-      console.log(`Tunneling GET - ${req.originalUrl} to ${socket.id}`);
+      console.log(`Tunneling GET - ${req.originalUrl} to ${socket!.id}`);
       const _req = {
         url: req.originalUrl,
         headers: req.headers,
@@ -72,13 +72,13 @@ export const listen = ({ PORT }) => {
       const id = crypto.randomBytes(20).toString("hex");
       const responseKey = `res_${id}`;
       for (const socket of sockets.values()) {
-        io.sockets.sockets.get(socket).on(responseKey, (_res) => {
+        io.sockets.sockets.get(socket)!.on(responseKey, (_res) => {
           res.set(_res.headers);
           res.status(_res.status);
           res.send(_res.body);
 
           for (const _socket of sockets.values()) {
-            io.sockets.sockets.get(_socket).removeAllListeners(responseKey);
+            io.sockets.sockets.get(_socket)!.removeAllListeners(responseKey);
           }
         });
       }
@@ -101,7 +101,7 @@ export const listen = ({ PORT }) => {
     console.log("io socket connected");
 
     socket.on("register_http_listener", (_, ack) => {
-      socket.join(socket.handshake.headers.host);
+      socket.join(socket.handshake.headers.host!);
     });
 
     socket.on("register_tcp_listener", async ({ preferredPort }, ack) => {
@@ -116,7 +116,7 @@ export const listen = ({ PORT }) => {
         ack({ port: NET_PORT });
       } catch (err) {
         ack({ err });
-        console.log(error);
+        console.log(err);
       }
     });
   });

@@ -16,7 +16,7 @@ export const listen = async ({
 }) => {
   const [PROVIDER_HOST] = PROVIDER.split(":");
 
-  let netSockets = {};
+  let netSockets: { [key: string]: net.Socket } = {};
 
   const tty = isatty(process.stdout.fd);
 
@@ -50,11 +50,6 @@ export const listen = async ({
         updateConsole();
       }
     );
-    updateConsole();
-  });
-
-  socket.io.on("reconnection_attempt", () => {
-    reconnecting = true;
     updateConsole();
   });
 
@@ -148,11 +143,9 @@ export const listen = async ({
 
       netSockets[connectionId] = client;
 
-
       client.connect(TO_PORT, TO_HOST, () => {
         socket.emit(`${connectionId}_connected`);
         updateConsole();
-
       });
 
       socketStream.pipe(client);

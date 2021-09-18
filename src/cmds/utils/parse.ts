@@ -7,25 +7,25 @@ export const parseTo = (to) => {
 
   switch (split.length) {
     case 1:
-      if (!isNaN(split[0])) {
-        TO_PORT = split[0];
+      if (!isNaN(Number(split[0]))) {
+        TO_PORT = Number(split[0]);
       } else {
         TO_HOST = split[0];
       }
       break;
     case 2:
-      if (isNaN(split[1])) {
+      if (isNaN(Number(split[1]))) {
         TO_PROTOCOL = split[0];
         TO_HOST = split[1];
       } else {
         TO_HOST = split[0];
-        TO_PORT = split[1];
+        TO_PORT = Number(split[1]);
       }
       break;
     case 3:
       TO_PROTOCOL = split[0];
       TO_HOST = split[1];
-      TO_PORT = split[2];
+      TO_PORT = Number(split[2]);
       break;
     default:
       break;

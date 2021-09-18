@@ -1,5 +1,5 @@
 import crypto from "crypto";
-import { parseTo } from "./utils/parse.js";
+import { parseTo } from "./utils/parse";
 
 export const command = "http [to]";
 export const desc = "Start tunnelr http client";
@@ -26,7 +26,7 @@ export const builder = {
 };
 
 export const handler = async (argv) => {
-  const { listen } = await import("../client/client-http.js");
+  const { listen } = await import("../client/client-http");
   listen({
     PROVIDER: `${argv.room}${argv["dot-domain"] ? "-dot-" : "."}${
       argv.provider

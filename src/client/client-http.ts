@@ -7,6 +7,15 @@ import stream from "stream";
 import { promisify } from "util";
 import request from "request";
 
+export interface HttpClientArgs {
+  PROVIDER: string;
+  TO_PROTOCOL: string;
+  TO_HOST: string;
+  TO_PORT: number;
+  SECURE: boolean;
+  TTY?: boolean;
+}
+
 const pipeline = promisify(stream.pipeline);
 export const listen = async ({
   PROVIDER,
@@ -14,15 +23,16 @@ export const listen = async ({
   TO_HOST,
   TO_PORT,
   SECURE,
-}) => {
-  const tty = isatty(process.stdout.fd);
+  TTY,
+}: HttpClientArgs) => {
+  const tty = TTY === undefined ? isatty(process.stdout.fd) : TTY;
 
   const IO_PROTOCOL = SECURE ? "https" : "http";
   const socket = io(`${IO_PROTOCOL}://${PROVIDER}`);
 
   let error = "";
   let reconnecting = false;
-  const logs = [];
+  const logs: string[] = [];
 
   socket.on("connect_error", (err) => {
     reconnecting = true;
@@ -33,11 +43,6 @@ export const listen = async ({
   socket.on("connect", function () {
     reconnecting = false;
     socket.emit("register_http_listener", {});
-    updateConsole();
-  });
-
-  socket.io.on("reconnection_attempt", () => {
-    reconnecting = true;
     updateConsole();
   });
 
@@ -53,7 +58,7 @@ export const listen = async ({
     }
   }, 5000);
 
-  const addLog = (log) => {
+  const addLog = (log: string) => {
     if (tty) {
       if (logs.length > 5) {
         logs.pop();
