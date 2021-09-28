@@ -144,8 +144,12 @@ export const listen = async ({
       netSockets[connectionId] = client;
 
       client.connect(TO_PORT, TO_HOST, () => {
-        socket.emit(`${connectionId}_connected`);
         updateConsole();
+      });
+
+      client.on("error", (err) => {
+        client.destroy(err);
+        socketStream.end();
       });
 
       socketStream.pipe(client);

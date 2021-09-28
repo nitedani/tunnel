@@ -24,6 +24,11 @@ const createNetTunnel = ({ PORT, IO_SOCKET }) => {
         },
         socketStream
       );
+
+      netSocket.on("error", () => {
+        socketStream.end();
+      });
+
       socketStream.pipe(netSocket);
       netSocket.pipe(socketStream);
     });
