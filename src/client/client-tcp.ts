@@ -150,6 +150,8 @@ export const listen = async ({
       client.on("error", (err) => {
         client.destroy(err);
         socketStream.end();
+        socket.disconnect();
+        console.log('Error:', err);
       });
 
       socketStream.pipe(client);

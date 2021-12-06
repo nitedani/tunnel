@@ -27,6 +27,7 @@ const createNetTunnel = ({ PORT, IO_SOCKET }) => {
 
       netSocket.on("error", () => {
         socketStream.end();
+        console.log(`${connectionId} error`);
       });
 
       socketStream.pipe(netSocket);
@@ -128,5 +129,6 @@ export const listen = ({ PORT }) => {
 
   server.listen(PORT, () => {
     console.log(`tunnelr listening on *:${PORT}`);
+    console.log('almafa');
   });
 };
