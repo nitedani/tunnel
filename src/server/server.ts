@@ -36,7 +36,21 @@ const createNetTunnel = ({ PORT, IO_SOCKET }) => {
 
     IO_SOCKET.on("disconnect", () => server.close());
 
-    return server.listen(PORT).once("listening", resolve).once("error", reject);
+    let retries = 0;
+
+    const _listen = () => {
+      return server.listen(PORT).once("listening", resolve);
+    };
+
+    _listen().once("error", () => {
+      if (retries < 1) {
+        retries++;
+        console.log(`retrying to listen on port ${PORT}`);
+        setTimeout(() => {
+          _listen().once("error", reject);
+        }, 10000);
+      }
+    });
   });
 };
 
@@ -45,7 +59,7 @@ export const listen = ({ PORT }) => {
   app.use(bp.raw({ type: "*/*" }));
 
   const server = http.createServer(app);
-  const io = new Server(server);
+  const io = new Server(server, { pingInterval: 5000, pingTimeout: 3000 });
   app.get("*", (req, res) => {
     const room = req.headers.host;
     const sockets = io.sockets.adapter.rooms.get(room);
@@ -129,6 +143,6 @@ export const listen = ({ PORT }) => {
 
   server.listen(PORT, () => {
     console.log(`tunnelr listening on *:${PORT}`);
-    console.log('almafa');
+    console.log("almafa");
   });
 };
