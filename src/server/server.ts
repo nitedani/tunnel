@@ -36,20 +36,15 @@ const createNetTunnel = ({ PORT, IO_SOCKET }) => {
 
     IO_SOCKET.on("disconnect", () => server.close());
 
-    let retries = 0;
-
     const _listen = () => {
       return server.listen(PORT).once("listening", resolve);
     };
 
     _listen().once("error", () => {
-      if (retries < 1) {
-        retries++;
-        console.log(`retrying to listen on port ${PORT}`);
-        setTimeout(() => {
-          _listen().once("error", reject);
-        }, 10000);
-      }
+      console.log(`retrying to listen on port ${PORT}`);
+      setTimeout(() => {
+        _listen().once("error", reject);
+      }, 10000);
     });
   });
 };
