@@ -1,4 +1,4 @@
-FROM node:15.14.0-alpine3.12
+FROM node:17.1.0-alpine3.12
 WORKDIR /app
 COPY --chown=node:node package*.json ./
 RUN npm ci
