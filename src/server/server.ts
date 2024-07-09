@@ -93,10 +93,7 @@ export const listen = ({ PORT }) => {
   const server = http.createServer(app);
   const io = new Server(server, { pingInterval: 5000, pingTimeout: 3000 });
   app.get("*", (req, res) => {
-    const room = req.headers.host;
-
-    console.log({ room });
-
+    const room = req.headers.host.split('.')[0];
     const sockets = io.sockets.adapter.rooms.get(room);
 
     if (sockets) {
