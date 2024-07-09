@@ -1,0 +1,45 @@
+{
+  "name": "tunnelr",
+  "type": "commonjs",
+  "version": "1.0.14",
+  "description": "",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/nitedani/tunnel"
+  },
+  "author": {
+    "email": "nitedani@gmail.com",
+    "name": "Horváth Dániel"
+  },
+  "main": "lib/cjs/index.js",
+  "bin": {
+    "tunnelr": "./lib/cjs/main.js"
+  },
+  "scripts": {
+    "tunnelr": "node ./src/main.js",
+    "start": "node ./src/main.js serve",
+    "build": "npm run build:esm && npm run  build:cjs",
+    "build:esm": "tsc",
+    "build:cjs": "tsc --module commonjs --outDir lib/cjs"
+  },
+  "keywords": [],
+  "license": "ISC",
+  "dependencies": {
+    "@sap_oss/node-socketio-stream": "^1.0.3",
+    "body-parser": "^1.19.0",
+    "chalk": "^4.1.2",
+    "cli-table": "^0.3.6",
+    "express": "^4.17.1",
+    "got": "^11.8.2",
+    "pretty-bytes": "^5.6.0",
+    "request": "^2.88.2",
+    "socket.io": "^4.1.3",
+    "socket.io-client": "^4.1.3",
+    "yargs": "^17.1.1"
+  },
+  "devDependencies": {
+    "@types/node": "16.9.2",
+    "@types/yargs": "17.0.5",
+    "typescript": "^4.5.2"
+  }
+}
