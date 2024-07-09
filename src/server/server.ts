@@ -96,6 +96,9 @@ export const listen = ({ PORT }) => {
     const room = req.headers.host.split('.')[0];
     const sockets = io.sockets.adapter.rooms.get(room);
 
+    console.log("request", room);
+    
+
     if (sockets) {
       const socket = io.sockets.sockets.get(sockets.values().next().value);
       console.log(`Tunneling GET - ${req.originalUrl} to ${socket!.id}`);
@@ -114,7 +117,7 @@ export const listen = ({ PORT }) => {
   });
 
   app.post("*", (req, res) => {
-    const room = req.headers.host;
+    const room = req.headers.host.split('.')[0];
     const sockets = io.sockets.adapter.rooms.get(room);
 
     if (sockets) {
@@ -153,6 +156,8 @@ export const listen = ({ PORT }) => {
     console.log("io socket connected");
 
     socket.on("register_http_listener", (_, ack) => {
+      console.log("connect", socket.handshake.query.room);
+      
       socket.join(socket.handshake.query.room!);
     });
 
